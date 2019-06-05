@@ -3,11 +3,11 @@ import numpy as np
 
 class ModelBase:
 
-    def __init__(self, n, m, dt, T):
-        self.n = n
-        self.m = m
-        self.dt = dt
-        self.T = T
+    def __init__(self, dt, T):
+        self.n = 1      # dimensionality of state
+        self.m = 1      # dimensionality of control
+        self.dt = dt    # duration of timestep
+        self.T = T      # number of steps to planning horizon
 
     ############################ TO BE IMPLEMENTED ############################
 
@@ -23,7 +23,7 @@ class ModelBase:
     def dfdx(self, x, u, t):
         pass
 
-    # the loss of the current state and control.
+    # the loss of the current state and control
     def L(self, x, u, t):
         pass
 

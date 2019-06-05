@@ -16,10 +16,9 @@ class OptimizerBase:
 class Gogurt(OptimizerBase):
 
     def step(self, x0, U, step_size):
-        X = self.model.predict(x0, U)
         for i in range(self.model.T):
-            U[i] -= step_size * dCdu(X, U, i)
-            X = predict(X[0], U)
+            X = self.model.predict(x0, U)
+            U[i] -= step_size * self.model.dCdu(X, U, i)
 
         return U
 
@@ -28,5 +27,6 @@ class Gogurt(OptimizerBase):
 class AllAtOnce(OptimizerBase):
 
     def step(self, x0, U, step_size):
+        X = self.model.predict(x0, U)
         dCdU = [self.model.dCdu(X, U, i) for i in range(self.model.T)]
         return U - step_size * np.array(dCdU)
