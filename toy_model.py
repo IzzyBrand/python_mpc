@@ -6,7 +6,12 @@ def wrap(theta):
     return (theta + np.pi) % (2*np.pi) - np.pi
 
 class Toy(ModelBase):
-
+    """
+    In this simple toy model, the state is a 3-vector x, y, theta
+    and the control input is a 1-vector steering angle which changes theta.
+    The objective function is to drive x,y,theta to zero at the last time-step, 
+    while minimizing the steering angle at each timestep.
+    """
     def __init__(self, *args):
         super().__init__(*args)
         self.n = 3
