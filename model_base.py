@@ -1,5 +1,5 @@
 import numpy as np
-
+import sympy as sp
 
 class ModelBase:
 
@@ -52,8 +52,8 @@ class ModelBase:
     # [T x n] get the trajectory starting at x0 following control sequence U
     def predict(self, x0, U):
         X = np.zeros([self.T, self.n])
-        X[0,:] = x0
-        for i in range(self.T-1): X[i+1, :] = X[i] + self.f(X[i], U[i], self.dt*i)
+        X[0] = x0
+        for i in range(self.T-1): X[i+1] = X[i] + self.f(X[i], U[i], self.dt*i)
         return X
 
     # calculate the cost of an entire trajectory
@@ -64,6 +64,7 @@ class ModelBase:
     def dCdu(self, X, U, i):
         # find the changes in cost resulting from change in control
         dC = self.dLdu(X[i], U[i], self.dt*i)
+
 
         # and then for each subsequent state, j, find the change in cost
         # as a result from change in control at state i
@@ -76,3 +77,49 @@ class ModelBase:
             chain_accumulator = self.dxdx(X[j], U[j], self.dt*j) @ chain_accumulator
 
         return dC
+
+
+# by implementing the dynamics and cost function with sympy operations, we can
+# use symbolic differentiation to autonmatically find all the Jacobians
+class SympyModelBase(ModelBase):
+
+    def __init__(self, dt, T):
+        super().__init__(dt, T)
+
+    ############################ TO BE IMPLEMENTED ############################
+
+    def sym_f(self, x, u, t):
+        pass
+
+    def sym_L(self, x, u, t):
+        pass
+
+    ########################## END TO BE IMPLEMENTED ##########################
+
+    # takes a sympy symbolic Matrix, and converts it to a function
+    # which output a numpy array corresponding to subsituting values in
+    # for the symbols
+    def convert_sympy_expr_to_np_func(self, mat, x, u, t):
+        mat_func = sp.lambdify((x, u, t), mat, modules='sympy')
+        return lambda x, u, t: np.array(mat_func(x, u, t), dtype=float).squeeze()
+
+    # calculates the Jacobians symbolically and sets all the relevant functions
+    def setup(self):
+        x = sp.Matrix(sp.symbols('x0:{}'.format(self.n)))
+        u = sp.Matrix(sp.symbols('u0:{}'.format(self.m)))
+        t = sp.symbols('t')
+
+        f = self.sym_f(x, u, t)
+        dfdx = f.jacobian(x)
+        dfdu = f.jacobian(u)
+
+        L = self.sym_L(x, u, t)
+        dLdx = L.diff(x)
+        dLdu = L.diff(u)
+
+        self.f = self.convert_sympy_expr_to_np_func(f, x, u, t)
+        self.L = self.convert_sympy_expr_to_np_func(L, x, u, t)
+        self.dfdx = self.convert_sympy_expr_to_np_func(dfdx, x, u, t)
+        self.dfdu = self.convert_sympy_expr_to_np_func(dfdu, x, u, t)
+        self.dLdx = self.convert_sympy_expr_to_np_func(dLdx, x, u, t)
+        self.dLdu = self.convert_sympy_expr_to_np_func(dLdu, x, u, t)
