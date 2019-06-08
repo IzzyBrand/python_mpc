@@ -7,7 +7,7 @@ def wrap(theta):
     return (theta + np.pi) % (2*np.pi) - np.pi
 
 def sym_wrap(theta):
-    return (theta + sp.pi) % (2*sp.pi) - sp.pi
+    return sp.Mod(theta + sp.pi, 2*sp.pi) - sp.pi
 
 class Rocket(SympyModelBase):
 
@@ -37,13 +37,13 @@ class Rocket(SympyModelBase):
         return sp.Matrix([xdot, ydot, thetadot, xddot, yddot, thetaddot])
 
     def sym_L(self, x, u, t):
-        return x[0]**2 * 10 +\
-               x[1]**2 * 50 +\
+        return x[0]**2 +\
+               x[1]**2 +\
                x[2]**2 +\
-               x[3]**2 * 5 +\
-               x[4]**2 * 50 +\
+               x[3]**2 +\
+               x[4]**2 +\
                x[5]**2 +\
-               u[0]*sp.Heaviside(u[0]) * 0.25 +\
-               u[1]**2
+               u[0]*sp.Heaviside(u[0]) * 1e-5 +\
+               u[1]**2 * 100
 
 

@@ -1,9 +1,13 @@
 import numpy as np
-from model_base import ModelBase
+import sympy as sp
+from model_base import ModelBase, SympyModelBase
 
 # a helper function that takes an angle and bounds it [-pi, pi]
 def wrap(theta):
     return (theta + np.pi) % (2*np.pi) - np.pi
+
+def sym_wrap(theta):
+    return sp.Mod(theta + sp.pi, 2*sp.pi) - sp.pi
 
 class Toy(ModelBase):
     """
@@ -40,8 +44,7 @@ class Toy(ModelBase):
     def L(self, x, u, t):
         control_loss = u[0]**2
         position_loss = (x[0]**2 + x[1]**2) * (t==self.dt*(self.T-1))
-        angle_loss = 10*wrap(x[2])**2 * (t==self.dt*(self.T-1))
-        return np.array([angle_loss + position_loss + control_loss])
+        return np.array([position_loss + control_loss])
 
     # [m] change in loss wrt control
     def dLdu(self, x, u, t):
@@ -49,4 +52,27 @@ class Toy(ModelBase):
 
     # [n] change in loss wrt state
     def dLdx(self, x, u, t):
-        return np.array([2*x[0], 2*x[1], 20*wrap(x[2])]) * (t==self.dt*(self.T-1))
+        return np.array([2*x[0], 2*x[1], 0]) * (t==self.dt*(self.T-1))
+
+
+class SympyToy(SympyModelBase):
+    """
+    This is the same dynamics as implemented above, but we use sympy to
+    to automatically find the gradients for us
+    """
+    def __init__(self, *args):
+        super().__init__(*args)
+        self.n = 3
+        self.m = 1
+        self.setup()
+
+    def sym_f(self, x, u, t):
+        theta = x[2]
+        return sp.Matrix([sp.cos(theta + u[0]), sp.sin(theta + u[0]), u[0]])
+
+    def sym_L(self, x, u, t):
+        control_loss = u[0]**2
+        pos_loss = x[0]**2 + x[1]**2
+
+        end_loss = sp.Piecewise((0, t < self.dt*(self.T-1)), (pos_loss, True))
+        return sp.Matrix([control_loss + end_loss])
